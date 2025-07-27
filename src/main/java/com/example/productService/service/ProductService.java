@@ -1,6 +1,7 @@
 package com.example.productService.service;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.batch.core.Job;
@@ -55,10 +56,8 @@ public class ProductService {
 			File tempFile = File.createTempFile("products_", ".csv");
 			file.transferTo(tempFile);
 
-			JobParameters jobParameters = new JobParametersBuilder()
-					.addString("filePath", tempFile.getAbsolutePath())
-					.addLong("timestamp", System.currentTimeMillis())
-					.toJobParameters();
+			JobParameters jobParameters = new JobParametersBuilder().addString("filePath", tempFile.getAbsolutePath())
+					.addLong("timestamp", System.currentTimeMillis()).toJobParameters();
 
 			jobLauncher.run(job, jobParameters);
 
@@ -93,6 +92,11 @@ public class ProductService {
 		}
 		return apiResponse;
 
+	}
+
+	public List<Product> getAll() {
+		List<Product> products = productRepository.findAll();
+		return products;
 	}
 
 	public ApiResponse delete(Integer id) {
