@@ -1,6 +1,8 @@
 package com.example.productService.entity;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+
 import jakarta.persistence.Id;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,7 +19,7 @@ public class Product {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Integer Id;
-	
+
 	@Column(nullable = false, unique = true)
 	private String productSKU;
 
@@ -26,5 +28,32 @@ public class Product {
 	private String description;
 
 	private BigDecimal price;
+
+	@Column(name = "quantity", nullable = false)
+	private Integer quantity;
+
+	private String category;
+
+	private String brand;
+
+	private String model;
+
+	private BigDecimal weight;
+
+	private String dimensions;
+
+	private BigDecimal costPrice;
+
+	private BigDecimal salePrice;
+
+	private Boolean active;
+
+	private Boolean taxable;
+
+	private String barcode;
+
+	private String manufacturedBy;
+
+	private String madeIn;
 
 }

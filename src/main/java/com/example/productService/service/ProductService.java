@@ -1,8 +1,19 @@
 package com.example.productService.service;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.JobParameters;
@@ -70,6 +81,81 @@ public class ProductService {
 			e.printStackTrace();
 		}
 		return response;
+	}
+
+	public String readCsvAndSaveDb(MultipartFile file) throws IOException, InterruptedException, ExecutionException {
+
+		InputStream inputStream = file.getInputStream();
+		BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream));
+		String headerLine = bufferedReader.readLine();
+		if (headerLine == null) {
+			throw new RuntimeException("CSV file is empty");
+		}
+		String[] csvHeaders = headerLine.split(",");
+		List<String> expectedHeaders = List.of("productSKU", "name", "description", "price", "quantity", "category",
+				"brand", "model", "weight", "dimensions", "costPrice", "salePrice", "active", "taxable", "barcode",
+				"manufacturedBy", "madeIn");
+		for (int i = 0; i < csvHeaders.length; i++) {
+			if (!expectedHeaders.contains(csvHeaders[i])) {
+				throw new RuntimeException("invalid entity template");
+			}
+		}
+		String line;
+		int count = 0;
+		int batchCount = 0;
+		List<Product> batch = new ArrayList<>();
+		List<List<Product>> batches = new ArrayList<>();
+		while ((line = bufferedReader.readLine()) != null) {
+			String[] data = line.split(",");
+
+			// create user
+			Product product = new Product();
+
+			product.setProductSKU(data[0].trim());
+			product.setName(data[1].trim());
+			product.setDescription(data[2].trim());
+			product.setPrice(new BigDecimal(data[3].trim()));
+			product.setQuantity(Integer.parseInt(data[4].trim()));
+			product.setCategory(data[5].trim());
+			product.setBrand(data[6].trim());
+			product.setModel(data[7].trim());
+			product.setWeight(new BigDecimal(data[8].trim()));
+			product.setDimensions(data[9].trim());
+			product.setCostPrice(new BigDecimal(data[10].trim()));
+			product.setSalePrice(new BigDecimal(data[11].trim()));
+			product.setBarcode(data[12].trim());
+			product.setManufacturedBy(data[13].trim());
+			product.setMadeIn(data[14].trim());
+			product.setActive(Boolean.parseBoolean(data[15].trim()));
+			product.setTaxable(Boolean.parseBoolean(data[16].trim()));
+			batch.add(product);
+
+			if (batch.size() == 1000) {
+				// productRepository.saveAll(batch);
+				batches.add(new ArrayList<>(batch));
+				count++;
+				log.info("{} batched add so far...", count);
+				batch.clear();
+			}
+
+		}
+		ExecutorService executor = Executors.newFixedThreadPool(10);
+		List<Future<?>> futures = new ArrayList<>();
+		
+		for (List<Product> b : batches) {
+
+			futures.add(executor.submit(() -> productRepository.saveAll(b)));
+			batchCount++;
+			log.info("{} batches saved in db so far...", batchCount);
+		}
+		for (Future<?> f : futures) {
+			f.get();
+		}
+
+		executor.shutdown();
+
+		return "data saved";
+
 	}
 
 	public ApiResponse update(Integer id, Product product) {

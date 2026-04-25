@@ -1,5 +1,7 @@
 package com.example.productService.controller;
 
+import com.example.productService.DTO.InventoryResponse;
+import com.example.productService.service.Interface.InventoryClient;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -11,6 +13,7 @@ import com.example.productService.service.ProductService;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +35,9 @@ public class ProductController {
 	@Autowired
 	private ProductService productService;
 
+	@Autowired
+	private InventoryClient inventoryClient;
+
 	@PostMapping(value = "/add")
 	public ResponseEntity<ApiResponse> add(@RequestBody Product product) {
 		ApiResponse response = new ApiResponse();
@@ -41,14 +47,36 @@ public class ProductController {
 		return ResponseEntity.ok(response);
 	}
 
-	@PostMapping(value = "/uploadCsv")
-	public ResponseEntity<ApiResponse> uploadCsv(@RequestParam MultipartFile file) {
+//	@PostMapping(value = "/uploadCsv")
+//	public ResponseEntity<ApiResponse> uploadCsv(@RequestParam MultipartFile file) {
+//
+//		ApiResponse response = new ApiResponse();
+//		log.info("initating productController.uploadCsv function");
+//		response = productService.readCsvAndSave(file);
+//
+//		return ResponseEntity.ok(response);
+//	}
+	
+	@PostMapping(value="/uploadCsv")
+	public ResponseEntity<?>uploadCsv(@RequestParam("csvFile") MultipartFile file){
+		String abc="";
+		if(file.isEmpty())
+		{
+			return(new ResponseEntity<>("uploaded file is empty",HttpStatus.NO_CONTENT));
+		}
+		else if(!file.getContentType().equals("text/csv")) {
+			return(new ResponseEntity<>("please upload a valid csv file",HttpStatus.BAD_REQUEST));
+		}
+		log.info("initating productController.upload()");
+		try {
+			 abc=productService.readCsvAndSaveDb(file);
+		} catch (Exception e) {
+			
+		abc=e.getMessage().toString();
+		}
+		
+		return ResponseEntity.ok(abc);
 
-		ApiResponse response = new ApiResponse();
-		log.info("initating productController.uploadCsv function");
-		response = productService.readCsvAndSave(file);
-
-		return ResponseEntity.ok(response);
 	}
 
 	@GetMapping("/getAll")
@@ -73,5 +101,14 @@ public class ProductController {
 		apiResponse = productService.delete(id);
 		return ResponseEntity.ok(apiResponse);
 	}
+
+	@GetMapping("/buy/{productId}")
+	public String buy(@PathVariable Integer productId) {
+
+		InventoryResponse response = inventoryClient.checkQuantity(productId,1);
+
+		return  response.getMessage();
+	}
+
 
 }
