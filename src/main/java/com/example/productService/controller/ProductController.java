@@ -1,6 +1,7 @@
 package com.example.productService.controller;
 
 import com.example.productService.DTO.InventoryResponse;
+import com.example.productService.DTO.ProductRequestDTO;
 import com.example.productService.service.Interface.InventoryClient;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -102,12 +103,23 @@ public class ProductController {
 		return ResponseEntity.ok(apiResponse);
 	}
 
-	@GetMapping("/buy/{productId}")
-	public String buy(@PathVariable Integer productId) {
+	@GetMapping("/order/{id}")
+	public ResponseEntity<?> getProductForOrder(@PathVariable Integer id) {
 
-		InventoryResponse response = inventoryClient.checkQuantity(productId,1);
+		Product product = productService.findProduct(id);
 
-		return  response.getMessage();
+		if (product == null) {
+			return ResponseEntity
+					.badRequest()
+					.body("Product not found with id: " + id);
+		}
+
+		ProductRequestDTO response=new ProductRequestDTO();
+		response.setId(product.getId());
+		response.setName(product.getName());
+		response.setPrice(product.getPrice());
+
+		return ResponseEntity.ok(response);
 	}
 
 

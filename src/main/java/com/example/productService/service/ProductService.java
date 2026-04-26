@@ -202,4 +202,8 @@ public class ProductService {
 		return apiResponse;
 	}
 
+	public Product findProduct(Integer id) {
+		return productRepository.findById(id).orElse(null);
+	}
+
 }
